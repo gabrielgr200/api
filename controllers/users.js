@@ -25,7 +25,7 @@ router.post("/register", async (req, res) =>{
 router.get("/users", async (req, res) =>{
     const users = await db.cadastro.findAll({
 
-        attributes: ['id', 'name', 'email'],
+        attributes: ['name', 'email', 'password'],
 
         order: [['id', 'DESC']]
     });
@@ -76,7 +76,7 @@ router.post("/login", async (req, res) => {
 router.get("/users", async (req, res) => {
   
     const users = await db.cadastro.findAll({
-        attributes: ['id', 'name', 'email'],
+        attributes: ['name', 'email', 'password'],
         order: [['id', 'DESC']]
     });
 
