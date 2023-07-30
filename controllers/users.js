@@ -39,7 +39,7 @@ router.post("/register", async (req, res) => {
 });
 
 router.get("/users/:id", verifyToken, async (req, res) => {
-    const { id } = req.user; // Get the user ID from the token payload
+    const { id } = req.user; 
   
     try {
       const user = await db.cadastro.findByPk(id, {
