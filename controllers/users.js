@@ -21,22 +21,33 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.get("/users", async (req, res) => {
+router.get("/users/:id", async (req, res) => {
   try {
-    const users = await db.cadastro.findAll({
-      attributes: ['id', 'name', 'email', 'password']
+    const { id } = req.params;
+
+    
+    const user = await db.cadastro.findOne({
+      where: { id }, 
+      attributes: ['name', 'email', 'password']
     });
 
+    if (!user) {
+      return res.status(404).json({
+        mensagem: "Usuário não encontrado"
+      });
+    }
+
     return res.json({
-      users
+      user
     });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
-      mensagem: "Erro ao buscar usuários"
+      mensagem: "Erro ao buscar usuário"
     });
   }
 });
+
 
 router.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
