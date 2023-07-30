@@ -21,13 +21,13 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.get("/users/:id", async (req, res) => {
+router.get("/users/:name", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { name } = req.params;
 
     
     const user = await db.cadastro.findOne({
-      where: { id }, 
+      where: { name }, 
       attributes: ['name', 'email', 'password']
     });
 
