@@ -65,7 +65,11 @@ router.post("/login", async (req, res) => {
             mensagem: "Credenciais inválidas"
         });
     }
-
+    const token = jwt.sign(
+        { id: user.id, name: user.name, email: user.email },
+        'U3#2w$Gs9aBv^67z8Nl!Tq1m5Op&*JkR', 
+        { expiresIn: '7d' } 
+      );
 
     return res.json({
         mensagem: "Login bem-sucedido"
@@ -76,7 +80,7 @@ router.post("/login", async (req, res) => {
 router.get("/users", async (req, res) => {
   
     const users = await db.cadastro.findAll({
-        attributes: ['name', 'email', 'password'],
+        attributes: ['name', 'email', 'password', 'token'],
         order: [['id', 'DESC']]
     });
 
