@@ -9,11 +9,11 @@ const verifyToken = (req, res, next) => {
   const token = req.header('Authorization');
 
   if (!token) {
-    return res.status(401).json({ mensagem: 'Token não fornecido' });
+    return res.status(403).json({ mensagem: 'Token não fornecido' });
   }
 
   try {
-    const decoded = jwt.verify(token.replace('Bearer ', ''), SECRET_KEY);
+    const decoded = jwt.verify(token, SECRET_KEY);
     req.user = decoded;
     next();
   } catch (err) {
@@ -27,9 +27,16 @@ router.post("/register", async (req, res) => {
 
   try {
     const dadosUsuario = await db.cadastro.create(dados);
+    const token = jwt.sign(
+      { id: dadosUsuario.id, name: dadosUsuario.name, email: dadosUsuario.email },
+      SECRET_KEY,
+      { expiresIn: '7d' }
+    );
+
     return res.json({
       mensagem: "Usuario cadastrado com sucesso",
-      dadosUsuario
+      dadosUsuario,
+      token 
     });
   } catch (err) {
     return res.json({
@@ -38,30 +45,34 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.get("/users/:id", verifyToken, async (req, res) => {
-    const { id } = req.user; 
-  
-    try {
-      const user = await db.cadastro.findByPk(id, {
-        attributes: ['name', 'email', 'password']
+router.get("/users", verifyToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ mensagem: "Acesso não autorizado" });
+    }
+
+    const userId = req.user.id;
+
+    const user = await db.cadastro.findByPk(userId, {
+      attributes: ['id', 'name', 'email', 'password']
+    });
+
+    if (user) {
+      return res.json({
+        user
       });
-  
-      if (user) {
-        return res.json({
-          user
-        });
-      } else {
-        return res.status(404).json({
-          mensagem: "Usuário não encontrado"
-        });
-      }
-    } catch (err) {
-      return res.status(500).json({
-        mensagem: "Erro ao buscar usuário"
+    } else {
+      return res.status(404).json({
+        mensagem: "Usuário não encontrado"
       });
     }
-  });
-  
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      mensagem: "Erro ao buscar usuário"
+    });
+  }
+});
 
 router.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
