@@ -3,6 +3,22 @@ const router = express.Router();
 const db = require('./../db/models');
 const jwt = require('jsonwebtoken');
 
+const verifyToken = (req, res, next) => {
+    const token = req.header('Authorization');
+  
+    if (!token) {
+      return res.status(401).json({ mensagem: 'Token não fornecido' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, 'U3#2w$Gs9aBv^67z8Nl!Tq1m5Op&*JkR');
+      req.user = decoded;
+      next();
+    } catch (err) {
+      return res.status(401).json({ mensagem: 'Token inválido' });
+    }
+  };
+
 router.post("/register", async (req, res) =>{
 
     var dados = req.body;
@@ -22,7 +38,7 @@ router.post("/register", async (req, res) =>{
       
 });
 
-router.get("/users", async (req, res) =>{
+router.get("/users", verifyToken, async (req, res) =>{
     const users = await db.cadastro.findAll({
 
         attributes: ['name', 'email', 'password'],
@@ -77,7 +93,7 @@ router.post("/login", async (req, res) => {
 });
 
 
-router.get("/users", async (req, res) => {
+router.get("/users", verifyToken,async (req, res) => {
   
     const users = await db.cadastro.findAll({
         attributes: ['name', 'email', 'password', 'token'],
