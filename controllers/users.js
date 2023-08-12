@@ -76,4 +76,30 @@ router.post("/login", async (req, res) => {
   });
 });
 
+router.delete("/users/:name", async (req, res) => {
+  try {
+    const { name } = req.params;
+
+    const user = await db.cadastro.findOne({ where: { name } });
+
+    if (!user) {
+      return res.status(404).json({
+        mensagem: "Usuário não encontrado"
+      });
+    }
+
+    
+    await user.destroy();
+
+    return res.json({
+      mensagem: "Conta do usuário excluída com sucesso"
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      mensagem: "Erro ao excluir a conta do usuário"
+    });
+  }
+});
+
 module.exports = router;
