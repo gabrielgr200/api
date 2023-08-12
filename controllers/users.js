@@ -21,14 +21,13 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.get("/users/:name", async (req, res) => {
+router.get("/users/:id", async (req, res) => {
   try {
-    const { name } = req.params;
+    const { id } = req.params;
 
-    
     const user = await db.cadastro.findOne({
-      where: { name }, 
-      attributes: ['name', 'email', 'password']
+      where: { id },
+      attributes: ['id', 'name', 'email', 'password'] 
     });
 
     if (!user) {
@@ -47,6 +46,7 @@ router.get("/users/:name", async (req, res) => {
     });
   }
 });
+
 
 
 router.post("/login", async (req, res) => {
