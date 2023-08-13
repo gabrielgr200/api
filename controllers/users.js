@@ -1,44 +1,95 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./../db/models');
-
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 router.post("/register", async (req, res) => {
-  var dados = req.body;
-  console.log(dados);
+  const dados = req.body;
 
   try {
+    const hashedPassword = await bcrypt.hash(dados.password, 10);
+    dados.password = hashedPassword;
+
     const dadosUsuario = await db.cadastro.create(dados);
 
     return res.json({
-      mensagem: "Usuario cadastrado com sucesso",
+      mensagem: "Usuário cadastrado com sucesso",
       dadosUsuario,
     });
   } catch (err) {
+    console.error(err);
     return res.json({
-      mensagem: "Usuario não foi cadastrado"
+      mensagem: "Usuário não foi cadastrado"
     });
   }
 });
 
-router.get("/users/:id", async (req, res) => {
+router.post("/login", async (req, res) => {
+  const { identifier, password } = req.body;
+
   try {
-    const { id } = req.params;
+    let user;
 
-    const user = await db.cadastro.findOne({
-      where: { id },
-      attributes: ['id', 'name', 'email', 'password'] 
-    });
+    if (identifier.includes('@')) {
+      user = await db.cadastro.findOne({ where: { email: identifier } });
+    } else {
+      user = await db.cadastro.findOne({ where: { name: identifier } });
+    }
 
-    if (!user) {
-      return res.status(404).json({
-        mensagem: "Usuário não encontrado"
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        mensagem: "Credenciais inválidas"
       });
     }
 
+    const token = jwt.sign({ userId: user.id }, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$', { expiresIn: '7d' });
+
     return res.json({
-      user
+      mensagem: "Login bem-sucedido",
+      token
     });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      mensagem: "Erro ao efetuar login"
+    });
+  }
+});
+
+router.get("/user", async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+
+    try {
+      const decodedToken = jwt.verify(token, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$');
+      
+      const user = await db.cadastro.findOne({
+        where: { id: decodedToken.userId },
+        attributes: ['id', 'name', 'email'] 
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          mensagem: "Usuário não encontrado"
+        });
+      }
+
+      return res.json({
+        user
+      });
+    } catch (err) {
+      if (err instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({
+          mensagem: "Token expirado. Faça o login novamente."
+        });
+      } else if (err instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({
+          mensagem: "Token inválido"
+        });
+      }
+      throw err;
+    }
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -47,40 +98,15 @@ router.get("/users/:id", async (req, res) => {
   }
 });
 
-
-
-router.post("/login", async (req, res) => {
-  const { identifier, password } = req.body;
-  let user;
-
-  if (identifier.includes('@')) {
-    user = await db.cadastro.findOne({ where: { email: identifier } });
-  } else {
-    user = await db.cadastro.findOne({ where: { name: identifier } });
-  }
-
-  if (!user) {
-    return res.status(401).json({
-      mensagem: "Credenciais inválidas"
-    });
-  }
-
-  if (user.password !== password) {
-    return res.status(401).json({
-      mensagem: "Credenciais inválidas"
-    });
-  }
-
-  return res.json({
-    mensagem: "Login bem-sucedido",
-  });
-});
-
-router.delete("/users/:name", async (req, res) => {
+router.delete("/user", async (req, res) => {
   try {
-    const { name } = req.params;
+    const token = req.headers.authorization.split(' ')[1];
 
-    const user = await db.cadastro.findOne({ where: { name } });
+    const decodedToken = jwt.verify(token, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$');
+
+    const user = await db.cadastro.findOne({
+      where: { id: decodedToken.userId },
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -88,7 +114,6 @@ router.delete("/users/:name", async (req, res) => {
       });
     }
 
-    
     await user.destroy();
 
     return res.json({
@@ -96,6 +121,11 @@ router.delete("/users/:name", async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    if (err instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({
+        mensagem: "Token inválido"
+      });
+    }
     return res.status(500).json({
       mensagem: "Erro ao excluir a conta do usuário"
     });
