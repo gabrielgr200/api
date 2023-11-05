@@ -4,25 +4,10 @@ const db = require('./../db/models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-
 router.post("/register", async (req, res) => {
   const dados = req.body;
 
   try {
-    const existingUserByName = await db.cadastro.findOne({ where: { name: dados.name } });
-    if (existingUserByName) {
-      return res.status(400).json({
-        mensagem: "Nome de usuário já existe",
-      });
-    }
-
-    const existingUserByEmail = await db.cadastro.findOne({ where: { email: dados.email } });
-    if (existingUserByEmail) {
-      return res.status(400).json({
-        mensagem: "Email já está em uso",
-      });
-    }
-
     const hashedPassword = await bcrypt.hash(dados.password, 10);
     dados.password = hashedPassword;
 
