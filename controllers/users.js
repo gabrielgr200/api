@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./../db/models');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 
@@ -23,7 +23,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(dados.password, 10);
+    const hashedPassword = bcrypt.hashSync(dados.password, 10);
     dados.password = hashedPassword;
 
     const dadosUsuario = await db.cadastro.create(dados);
