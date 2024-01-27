@@ -78,10 +78,10 @@ router.get("/user", async (req, res) => {
 
     try {
       const decodedToken = jwt.verify(token, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$');
-      
+
       const user = await db.cadastro.findOne({
         where: { id: decodedToken.userId },
-        attributes: ['id', 'name', 'email'] 
+        attributes: ['id', 'name', 'email']
       });
 
       if (!user) {
@@ -146,5 +146,78 @@ router.delete("/user", async (req, res) => {
     });
   }
 });
+
+router.post("/feedbacks", async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+
+    try {
+      const decodedToken = jwt.verify(token, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$');
+
+      const user = await db.cadastro.findOne({
+        where: { id: decodedToken.userId },
+        attributes: ['id', 'name', 'email']
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          mensagem: "Usuário não encontrado"
+        });
+      }
+
+      const { feedback, stars } = req.body;
+
+      const novoFeedback = await db.feedbacks.create({
+        feedback,
+        userId: user.id,
+        stars,
+      });
+
+      return res.json({
+        mensagem: "Feedback salvo com sucesso",
+        feedback: novoFeedback
+      });
+    } catch (err) {
+      if (err instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({
+          mensagem: "Token expirado. Faça o login novamente."
+        });
+      } else if (err instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({
+          mensagem: "Token inválido"
+        });
+      }
+      throw err;
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      mensagem: "Erro ao salvar o feedback"
+    });
+  }
+});
+
+router.get("/feedbacks", async (req, res) => {
+  try {
+    const feedbacks = await db.feedbacks.findAll({
+      attributes: ['feedback', 'stars'],
+      include: {
+        model: db.cadastro,
+        attributes: ['name']
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.json({
+      feedbacks
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      mensagem: "Erro ao listar os feedbacks"
+    });
+  }
+});
+
 
 module.exports = router;
