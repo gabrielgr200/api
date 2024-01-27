@@ -116,7 +116,6 @@ router.get("/user", async (req, res) => {
 router.delete("/user", async (req, res) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
-
     const decodedToken = jwt.verify(token, '8a2b1f8c4e7d5a0c3b6e9d7a2f4c#@$jhladmdfchvvsjhdf97849i363gdb334+!@$');
 
     const user = await db.cadastro.findOne({
@@ -129,6 +128,12 @@ router.delete("/user", async (req, res) => {
       });
     }
 
+    // Excluir feedbacks associados ao usuário
+    await db.feedbacks.destroy({
+      where: { userId: decodedToken.userId },
+    });
+
+    // Em seguida, excluir o usuário
     await user.destroy();
 
     return res.json({
@@ -146,6 +151,7 @@ router.delete("/user", async (req, res) => {
     });
   }
 });
+
 
 router.post("/feedbacks", async (req, res) => {
   try {
